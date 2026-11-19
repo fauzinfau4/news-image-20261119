@@ -1,35 +1,35 @@
-#!/usr/bin/env python3
-"""Copy the baked-in news poster to the grader's output location.
+"""Ship the rendered front page to the output folder.
 
-The poster (entry.png) was rendered at build time by draw.py. This
-entrypoint only copies bytes, so both graded runs write identical
-output with no network, no clock and no third-party packages.
+Reads nothing but the PNG sitting next to this file and copies its
+bytes to $MAKEFUN_OUTPUT_DIR (falling back to /output). Standard
+library only: no network, no clock, no image work here.
 """
 
-from os import environ
+import os
+import shutil
+
 from pathlib import Path
 
-SOURCE_NAME = "entry.png"
-DEFAULT_OUTPUT = Path("/output") / SOURCE_NAME
+HERE = Path(__file__).resolve().parent
+PNG_NAME = "entry.png"
+FALLBACK_DIR = Path("/output")
 
 
-def resolve_destination() -> Path:
-    raw = environ.get("MAKEFUN_OUTPUT_DIR", "")
-    if not raw:
-        return DEFAULT_OUTPUT
-    target = Path(raw)
-    if target.suffix == ".png":
-        return target
-    return target / SOURCE_NAME
+def pick_target():
+    """Work out where the finished PNG has to land."""
+    raw = os.environ.get("MAKEFUN_OUTPUT_DIR", "").strip()
+    base = Path(raw) if raw else FALLBACK_DIR
+    return base / PNG_NAME
 
 
-def main() -> None:
-    here = Path(__file__).resolve().parent
-    source = here / SOURCE_NAME
-    destination = resolve_destination()
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_bytes(source.read_bytes())
+def ship_poster():
+    """Copy entry.png byte-for-byte to the target folder."""
+    source = HERE / PNG_NAME
+    target = pick_target()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
+    print("Wrote " + str(target) + " (" +
+          str(target.stat().st_size) + " bytes)")
 
 
-if __name__ == "__main__":
-    main()
+ship_poster()
